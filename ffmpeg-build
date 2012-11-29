@@ -1,0 +1,57 @@
+#!/usr/bin/env ruby
+
+require 'tmpdir'
+
+libs = %w[libSDL libbz2 libfreetype libmp3lame libogg libopencore-amrnb libopencore-amrwb
+          libopenjpeg libopus libspeex libtheoradec libtheoraenc libvo-aacenc libvorbis
+          libvorbisenc libx264 libz]
+libdir = File.join(Dir.pwd, "libs")
+
+missing = libs.find_all {|lib| !File.exist? File.join(libdir, lib+".a")}
+if !missing.empty?
+  $stderr.puts "Missing the following static libraries:"
+  $stderr.puts missing.join(" ")
+  $stderr.puts "Make sure these are in #{libdir}"
+  exit 1
+end
+
+pwd = Dir.pwd
+
+args = %W[--prefix=#{Dir.pwd}/ffmpeg
+--as=yasm --extra-version=ffmpeg4archivists
+--extra-libs='-L#{libdir}' --disable-shared
+--enable-static --disable-ffserver --enable-gpl --enable-pthreads
+--enable-postproc --enable-libmp3lame --enable-libtheora
+--enable-libvorbis --enable-libx264 --enable-libxvid --enable-libspeex
+--enable-bzlib --enable-zlib --enable-libopencore-amrnb
+--enable-libopencore-amrwb --enable-version3 --enable-libvo-aacenc
+--enable-libvpx --enable-libopus --enable-filters
+--enable-runtime-cpudetect --disable-debug --enable-libfreetype
+--enable-libopenjpeg --cc=/usr/bin/gcc-4.2]
+
+alias :oldsystem :system
+
+def system *args
+  result = oldsystem *args
+  if not result
+    $stderr.puts
+    $stderr.puts "Failed executing: #{args.join(" ")}"
+    exit 1
+  end
+end
+
+Dir.mktmpdir do |dir|
+  Dir.chdir dir
+
+  ENV['LDLAGS'] = "-L#{libdir}"
+
+  system "brew unpack ffmpeg --HEAD"
+  Dir.chdir "ffmpeg-HEAD"
+  system "LDFLAGS='-L#{libdir}' ./configure #{args.join(" ")}"
+  system "make"
+  system "make install"
+end
+
+Dir.chdir pwd
+system "7za", "a", "ffmpeg/ffmpeg.7z", "ffmpeg/bin/*"
+puts "ffmpeg binaries installed to #{Dir.pwd}/ffmpeg/bin"
