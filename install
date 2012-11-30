@@ -4,7 +4,7 @@ if !File.exist?("/usr/local")
   puts "Please enter your password to allow the installer to make changes."
   system "sudo mkdir /usr/local"
   command = "sudo cp "
-elsif !File.writeable_real?("/usr/local")
+elsif !File.writeable?("/usr/local")
   puts "Please enter your password to allow the installer to make changes."
   command = "sudo cp "
 else
