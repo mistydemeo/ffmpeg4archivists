@@ -1,0 +1,16 @@
+#!/usr/bin/ruby
+
+if !File.exist?("/usr/local")
+  puts "Please enter your password to allow the installer to make changes."
+  system "sudo mkdir /usr/local"
+  command = "sudo cp "
+elsif !File.writeable_real?("/usr/local")
+  puts "Please enter your password to allow the installer to make changes."
+  command = "sudo cp "
+else
+  command = "cp "
+end
+
+%w[ffmpeg ffprobe].each do |file|
+  system command+file+" /usr/local/bin"
+end
